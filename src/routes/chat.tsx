@@ -1,15 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Check, Copy, Loader2, MessageSquare, Pencil, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { copyText } from "@/components/output-panel";
-import { DemoNotice, PageHeader, SourceBadge } from "@/components/page-header";
+import { PageHeader, SourceBadge } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { chatStore, logActivity, newId, type ChatEntry } from "@/lib/activity";
-import { runAi, settingsStore, type ChatMessage } from "@/lib/ai";
-import { demoChatReply } from "@/lib/demo";
-import { CHAT_SYSTEM_PROMPT, SUGGESTED_PROMPTS } from "@/lib/prompts";
+import { runAi } from "@/lib/ai";
+import { generateAi } from "@/lib/ai.functions";
+import { LIMITS } from "@/lib/ai-schema";
+import { SUGGESTED_PROMPTS } from "@/lib/prompts";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -30,7 +32,7 @@ export const Route = createFileRoute("/chat")({
 });
 
 function ChatPage() {
-  const settings = settingsStore.use();
+  const generateFn = useServerFn(generateAi);
   const messages = chatStore.use();
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,11 +53,13 @@ function ChatPage() {
     chatStore.set(history);
     setLoading(true);
     try {
-      const prompt: ChatMessage[] = [
-        { role: "system", content: CHAT_SYSTEM_PROMPT },
-        ...history.slice(-20).map((m) => ({ role: m.role, content: m.content })),
-      ];
-      const result = await runAi(settings, prompt, () => demoChatReply(question));
+      const result = await runAi(generateFn, {
+        kind: "chat",
+        messages: history.slice(-LIMITS.chatMessages).map((m) => ({
+          role: m.role,
+          content: m.content.slice(0, LIMITS.chatMessage),
+        })),
+      });
       chatStore.set((prev) => [
         ...prev,
         { id: newId(), role: "assistant", content: result.text, source: result.source },
@@ -104,7 +108,6 @@ function ChatPage() {
           </Button>
         }
       />
-      <DemoNotice />
 
       <section className="surface flex h-[calc(100dvh-19rem)] min-h-[30rem] flex-col overflow-hidden">
         <div ref={scroller} className="flex-1 overflow-y-auto p-4 sm:p-6">
@@ -222,6 +225,7 @@ function ChatPage() {
           <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
             <textarea
               aria-label="Your question"
+              maxLength={LIMITS.chatMessage}
               rows={1}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

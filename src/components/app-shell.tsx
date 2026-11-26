@@ -10,9 +10,9 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-import { isAiConfigured, settingsStore } from "@/lib/ai";
+import { migrateLegacySettings } from "@/lib/ai";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -37,7 +37,6 @@ function Brand() {
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const live = isAiConfigured(settingsStore.use());
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="px-5 pb-6 pt-6">
@@ -69,15 +68,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           className="block rounded-xl border border-sidebar-border bg-sidebar-accent p-4 transition-colors hover:border-sidebar-primary"
         >
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <span
-              className={`size-2 rounded-full ${live ? "bg-sidebar-primary" : "bg-sidebar-muted"}`}
-            />
-            {live ? "AI connected" : "Demo mode"}
+            <span className="size-2 rounded-full bg-sidebar-primary" />
+            AI built in
           </div>
           <p className="mt-1 text-xs leading-relaxed text-sidebar-muted">
-            {live
-              ? "Responses come from your connected AI service."
-              : "Outputs are sample templates, not AI. Add a key to go live."}
+            Every response is AI-generated. Review it before professional use.
           </p>
         </Link>
       </div>
@@ -87,6 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  useEffect(migrateLegacySettings, []);
   return (
     <div className="min-h-dvh bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 lg:flex">

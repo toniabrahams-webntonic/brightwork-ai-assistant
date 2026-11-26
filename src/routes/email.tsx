@@ -1,16 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass } from "@/components/field";
 import { OutputPanel } from "@/components/output-panel";
-import { DemoNotice, PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { logActivity } from "@/lib/activity";
-import { isAiConfigured, runAi, settingsStore, type Source } from "@/lib/ai";
-import { demoEmail } from "@/lib/demo";
-import { buildEmailMessages, TONES, type Tone } from "@/lib/prompts";
+import { runAi, settingsStore, type Source } from "@/lib/ai";
+import { generateAi } from "@/lib/ai.functions";
+import { LIMITS } from "@/lib/ai-schema";
+import { TONES, type Tone } from "@/lib/prompts";
 
 export const Route = createFileRoute("/email")({
   head: () => ({
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/email")({
 
 function EmailPage() {
   const settings = settingsStore.use();
+  const generateFn = useServerFn(generateAi);
   const [purpose, setPurpose] = useState("");
   const [recipient, setRecipient] = useState("");
   const [details, setDetails] = useState("");
@@ -46,10 +49,16 @@ function EmailPage() {
       toast.error("Add the email purpose and the recipient first.");
       return;
     }
-    const input = { purpose, recipient, details, tone, sender: settings.name };
     setLoading(true);
     try {
-      const result = await runAi(settings, buildEmailMessages(input), () => demoEmail(input));
+      const result = await runAi(generateFn, {
+        kind: "email",
+        purpose,
+        recipient,
+        details,
+        tone,
+        sender: settings.name.slice(0, LIMITS.sender),
+      });
       setOutput(result.text);
       setSource(result.source);
       logActivity("email", `${purpose} → ${recipient}`, result.source);
@@ -66,13 +75,13 @@ function EmailPage() {
         title="Smart Email Generator"
         description="Describe what you need to say and get a ready-to-send email you can edit."
       />
-      <DemoNotice />
       <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={generate} className="surface space-y-5 p-5 sm:p-6">
           <h2 className="text-lg font-semibold">Email details</h2>
           <Field label="Email purpose" htmlFor="purpose">
             <input
               id="purpose"
+              maxLength={LIMITS.purpose}
               className={inputClass}
               placeholder="e.g. Request a deadline extension for the Q3 report"
               value={purpose}
@@ -82,6 +91,7 @@ function EmailPage() {
           <Field label="Recipient" htmlFor="recipient">
             <input
               id="recipient"
+              maxLength={LIMITS.recipient}
               className={inputClass}
               placeholder="e.g. Priya Naidoo, Finance Manager"
               value={recipient}
@@ -95,6 +105,7 @@ function EmailPage() {
           >
             <textarea
               id="details"
+              maxLength={LIMITS.details}
               rows={6}
               className={`${inputClass} resize-y`}
               placeholder={"e.g. Data from sales arrived late\nNew date: Friday 4 December\nDraft is 80% complete"}
@@ -129,7 +140,7 @@ function EmailPage() {
           </div>
           <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {isAiConfigured(settings) ? "Generate email" : "Generate demo sample"}
+            Generate email
           </Button>
         </form>
 
@@ -138,7 +149,6 @@ function EmailPage() {
           text={output}
           onChange={setOutput}
           source={source}
-          model={settings.model}
           loading={loading}
           placeholder="Your email will appear here. You can copy it or edit it before sending."
         />

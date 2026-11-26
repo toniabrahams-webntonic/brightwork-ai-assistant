@@ -21,7 +21,6 @@ export function OutputPanel({
   text,
   onChange,
   source,
-  model,
   loading,
   placeholder,
 }: {
@@ -29,7 +28,6 @@ export function OutputPanel({
   text: string;
   onChange: (text: string) => void;
   source: Source | null;
-  model?: string;
   loading: boolean;
   placeholder: string;
 }) {
@@ -62,7 +60,7 @@ export function OutputPanel({
 
       {source && hasText && !loading ? (
         <div className="mt-3">
-          <SourceBadge source={source} {...(model ? { model } : {})} />
+          <SourceBadge source={source} />
         </div>
       ) : null}
 

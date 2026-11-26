@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowUpRight, Clock, FileSearch, Mail, MessageSquare } from "lucide-react";
 
-import { DemoNotice, PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { activityStore, MINUTES_SAVED, type ActivityType } from "@/lib/activity";
 import { settingsStore } from "@/lib/ai";
 import { useHydrated } from "@/lib/storage";
@@ -94,7 +94,6 @@ function Dashboard() {
         title={name ? `Welcome back, ${name}` : "Welcome to your workspace"}
         description="Write, research and get answers faster. Pick a tool to get started."
       />
-      <DemoNotice />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map(({ to, icon: Icon, title, text }, i) => (
@@ -192,7 +191,7 @@ function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{a.title}</div>
                         <div className="text-xs text-muted-foreground">
-                          {label} · {a.source === "ai" ? "AI" : "Demo sample"} ·{" "}
+                          {label} · {a.source === "ai" ? "AI" : "Earlier sample"} ·{" "}
                           {formatDistanceToNow(a.at, { addSuffix: true })}
                         </div>
                       </div>

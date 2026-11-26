@@ -31,7 +31,7 @@ use the editor.
 
 ## Project rules
 
-- Frontend only: no server functions, server routes, database or auth. Why: the owner requires a backend-free app.
-- AI calls go straight from the browser to an OpenAI-compatible endpoint with the user's own key from Settings (`src/lib/ai.ts`). Why: it is the only way to get real AI without a backend.
-- All AI/demo output flows through `runAi`, which tags results `ai` or `demo`; a failed AI call throws and never falls back to demo text. Why: template output must never be presented as AI-generated.
+- No database or auth; the only server code is the AI server function `generateAi` (`src/lib/ai.functions.ts`). Why: the owner wants built-in AI with no user key, which needs a server boundary for the gateway key.
+- AI calls use `@lovable.dev/ai-gateway` inside `generateAi`; prompts are built server-side from a zod-validated request (`src/lib/ai-schema.ts`) with size limits. Why: the endpoint is public, so callers must not supply system instructions or unbounded input.
+- All generated output flows through `runAi` (`src/lib/ai.ts`); there is no demo/template fallback, so a failed call throws. Why: the owner wants every response to be AI-generated.
 - Persisted client state uses `createLocalStore` (`src/lib/storage.ts`). Why: it is SSR-safe and avoids hydration mismatches.

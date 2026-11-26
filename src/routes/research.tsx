@@ -1,16 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { Field, inputClass } from "@/components/field";
 import { OutputPanel } from "@/components/output-panel";
-import { DemoNotice, PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { logActivity } from "@/lib/activity";
-import { isAiConfigured, runAi, settingsStore, type Source } from "@/lib/ai";
-import { demoResearch } from "@/lib/demo";
-import { buildResearchMessages, isArticle } from "@/lib/prompts";
+import { runAi, type Source } from "@/lib/ai";
+import { generateAi } from "@/lib/ai.functions";
+import { LIMITS } from "@/lib/ai-schema";
+import { isArticle } from "@/lib/prompts";
 
 export const Route = createFileRoute("/research")({
   head: () => ({
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/research")({
 });
 
 function ResearchPage() {
-  const settings = settingsStore.use();
+  const generateFn = useServerFn(generateAi);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [source, setSource] = useState<Source | null>(null);
@@ -50,9 +52,7 @@ function ResearchPage() {
     }
     setLoading(true);
     try {
-      const result = await runAi(settings, buildResearchMessages(input), () =>
-        demoResearch(input),
-      );
+      const result = await runAi(generateFn, { kind: "research", input });
       setOutput(result.text);
       setSource(result.source);
       logActivity("research", input, result.source);
@@ -69,7 +69,6 @@ function ResearchPage() {
         title="AI Research Assistant"
         description="Get a summary, key findings, insights and recommendations from a topic or an article."
       />
-      <DemoNotice />
       <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={generate} className="surface flex flex-col gap-5 p-5 sm:p-6">
           <h2 className="text-lg font-semibold">Topic or article</h2>
@@ -80,6 +79,7 @@ function ResearchPage() {
           >
             <textarea
               id="research-input"
+              maxLength={LIMITS.research}
               rows={14}
               className={`${inputClass} resize-y`}
               placeholder="e.g. The impact of hybrid working on team collaboration"
@@ -97,7 +97,7 @@ function ResearchPage() {
           </div>
           <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {isAiConfigured(settings) ? "Generate research brief" : "Generate demo sample"}
+            Generate research brief
           </Button>
         </form>
 
@@ -106,7 +106,6 @@ function ResearchPage() {
           text={output}
           onChange={setOutput}
           source={source}
-          model={settings.model}
           loading={loading}
           placeholder="Your summary, key findings, insights and recommendations will appear here."
         />
