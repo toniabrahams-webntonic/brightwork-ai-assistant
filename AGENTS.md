@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- Frontend only: no server functions, server routes, database or auth. Why: the owner requires a backend-free app.
+- AI calls go straight from the browser to an OpenAI-compatible endpoint with the user's own key from Settings (`src/lib/ai.ts`). Why: it is the only way to get real AI without a backend.
+- All AI/demo output flows through `runAi`, which tags results `ai` or `demo`; a failed AI call throws and never falls back to demo text. Why: template output must never be presented as AI-generated.
+- Persisted client state uses `createLocalStore` (`src/lib/storage.ts`). Why: it is SSR-safe and avoids hydration mismatches.
